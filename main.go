@@ -1,14 +1,23 @@
 package main
 
-import "fmt"
 import "net/http"
 import "io/ioutil"
+
 import "text/template"
+
+func main() {
+	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/", saveHandler)
+	http.ListenAndServe(":8080", nil)
+}
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[6:]
-	p, _ := loadPage(title)
-
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
+	}
 	t, _ := template.ParseFiles("view.html")
 	t.Execute(w, p)
 }
@@ -23,15 +32,12 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
-func main() {
-	http.HandleFunc("/", viewHandler)
-	http.HandleFunc("/edit/", editHandler)
-	http.ListenAndServe(":8080", nil)
-}
-
-type Page struct {
-	Title string
-	Body  []byte
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[6:]
+	body := r.FormValue("body")
+	p := &Page{Title: title, Body: []byte(body)}
+	p.save()
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
 func (p *Page) save() error {
@@ -46,5 +52,9 @@ func loadPage(title string) (*Page, error) {
 		return nil, err
 	}
 	return &Page{Title: title, Body: body}, nil
+}
 
+type Page struct {
+	Title string
+	Body  []byte
 }
