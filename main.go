@@ -13,8 +13,19 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func editHandler(w http.ResponseWriter, r *http.Request) {
+	title := r.URL.Path[6:]
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
+	}
+	t, _ := template.ParseFiles("edit.html")
+	t.Execute(w, p)
+}
+
 func main() {
 	http.HandleFunc("/", viewHandler)
+	http.HandleFunc("/edit/", editHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
